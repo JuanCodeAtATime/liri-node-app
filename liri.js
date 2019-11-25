@@ -1,20 +1,17 @@
 // Dotenv package to read and set any environment variables
 require("dotenv").config();
-
 // Created keys variable to import the required keys.js package
 let keys = require("./keys.js");
 
-//Created variables to store other required packages 
+//Initializing Spotify 
+const Spotify = require("node-spotify-api");
+const spotify = new Spotify(keys.spotify);
 
 //Axios package used to send requests to Bands in Town, Spotify and OMDB APIs.
 let axios = require("axios");
 //Using fs package to take text inside of random.txt and then use it to call a LIRI command
 let fs = require("fs");
 let moment = require("moment");
-
-//Initializing Spotify 
-const Spotify = require('node-spotify-api');
-const spotify = new Spotify(keys.spotify);
 
 
 //Storing User inputs into variables
@@ -23,7 +20,7 @@ let userSearch = process.argv[2];
 let userQuery = process.argv.slice(3).join("");
 
 //After hours of troubleshooting, I created a movie variable to support the for loop 
-//within the movie-this function.  See function for details.
+//within the "movie-this function".  See function for details.
 //It adds "+"signs in the movie query URL.  This prevents errors.
 let movie = "";
 
@@ -37,7 +34,7 @@ function liriDoThis(userSearch, userQuery) {
             break;
 
         case "spotify-this-song":
-            spotifyThis(userQuery);
+            spotifyThisSong(userQuery);
             break;
 
         case "movie-this":
@@ -50,7 +47,6 @@ function liriDoThis(userSearch, userQuery) {
 
         default:
             console.log("Ummm, I'm having trouble undertanding you.");
-            break;
     }
 }
 
@@ -81,30 +77,31 @@ function concertThis(artist) {
     // logResults(logConcertInfo);
 };
 
-
-function spotifyThis(songName) {
-    //Created another spotify variable.  This one holds secret key
-    // let spotify = new Spotify(keys.spotify);
-    console.log("This is my spotify data:  " + Spotify + spotify)
-
+function spotifyThisSong() {
     //If no song is provided, program defaults to "The Sign" by Ace of Base.
-    if (!songName) {
-        songName = "The Sign";
+    if (!userQuery) {
+        userQuery = "The Sign";
     }
+    console.log("---------This is my user query input:  " + userQuery + spotify + "-------------------")
+
     //Spotify search format
-    spotify.search({ type: "track", query: songName }, function (err, data) {
-        if (err) {
-            return console.log("This error occured" + err)
+    spotify.search({ type: "track", query: userQuery, limit: 1 }, function (error, data) {
+
+        console.log("---This is my user query input after the search:  " + userQuery + spotify + "-------------------")
+        if (error) {
+            return console.log("This error occured" + error)
         }
         //Created variable to store spotify data in array format which will print to console 
+
         let spotArray = data.tracks.items;
 
         for (i = 0; i < spotArray.length; i++) {
+            console.log("-----Album name based on the return data:  " + data.tracks.items[i].album.name + "-------------------")
             console.log("Boom! Check this out!\n\nArtist: " + data.tracks.items[i].album.artists[0].name);
             console.log("Song: " + data.tracks.items[i].name);
             console.log("Spotify Link: " + data.tracks.items[i].external_urls.spotify);
             console.log("Album: " + data.tracks.items[i].album.name);
-        };
+        }
     });
     // logResults(data);
 }
@@ -204,6 +201,7 @@ function doWhatiSay() {
 //     )
 // };
 //Calling the LIRI app function to initialize operation
+
 liriDoThis(userSearch, userQuery);
 
 
