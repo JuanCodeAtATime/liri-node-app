@@ -13,14 +13,19 @@ let fs = require("fs");
 let moment = require("moment");
 
 //Initializing Spotify 
-var Spotify = require("node-spotify-api");
-var spotify = new Spotify(keys.spotify);
+const Spotify = require('node-spotify-api');
+const spotify = new Spotify(keys.spotify);
 
 
 //Storing User inputs into variables
 //Process.argv[2] represents the beginning of the User input (after node and filename)
 let userSearch = process.argv[2];
 let userQuery = process.argv.slice(3).join("");
+
+//After hours of troubleshooting, I created a movie variable to support the for loop 
+//within the movie-this function.  See function for details.
+//It adds "+"signs in the movie query URL.  This prevents errors.
+let movie = "";
 
 
 //LIRI Logic
@@ -31,12 +36,12 @@ function liriDoThis(userSearch, userQuery) {
             concertThis(userQuery);
             break;
 
-        case "spotify-this":
+        case "spotify-this-song":
             spotifyThis(userQuery);
             break;
 
         case "movie-this":
-            movieThis(userQuery);
+            movieThis(movie);
             break;
 
         case "do-what-it-says":
@@ -50,41 +55,44 @@ function liriDoThis(userSearch, userQuery) {
 }
 
 function concertThis(artist) {
-    let artist = userQuery;
+
     let bandQueryUrl = "https://rest.bandsintown.com/artists/" + artist + "/events?app_id=codingbootcamp";
     axios.get(bandQueryUrl).then(
         function (response) {
-            console.log("Brace yourself for these dope search results!!!");
+            console.log(bandQueryUrl);
+            console.log("Brace yourself for these dope concert results!!!");
+            console.log("=================================================");
             //Formatted concert data that will print to console 
-            console.log(`\nConcert Venue Name: ${response.data[0].venue.name} 
-            \nLocation: ${response.data[0].venue.city} 
-            \nDate of Concert: ${moment(response.data[0].datetime).format("MM-DD-YYYY")}\n`);
+            console.log("Artist Name: " + response.data[0].artist.name);
+            console.log("Concert Venue Name: " + response.data[0].venue.name);
+            console.log("Location: " + response.data[0].venue.city);
+            console.log("Date of Concert: " + moment(response.data[0].datetime).format("MM-DD-YYYY"));
 
-            let logConcertInfo = "-------CONCERT LOG ENTRY--------" + "\nMusician Name: " +
-                artist + "\nConcert Venue Name: " + response.data[0].venue.name + "\nDate of Concert: " +
-                moment(response.data[0].datetime).format("MM-DD-YYYY");
+            // let logConcertInfo = "-------CONCERT LOG ENTRY--------" + "\nMusician Name: " +
+            //     artist + "\nConcert Venue Name: " + response.data[0].venue.name + "\nDate of Concert: " +
+            //     moment(response.data[0].datetime).format("MM-DD-YYYY");
 
-            //Appending concert info to log.txt file
-            fs.appendFile("log.txt"), logConcertInfo, function (err) {
-                if (err) throw err;
-            }
+            // //Appending concert info to log.txt file
+            // fs.appendFile("log.txt"), logConcertInfo, function (err) {
+            //     if (err) throw err;
+            // }
         });
 
-    // logResults(response);
+    // logResults(logConcertInfo);
 };
 
 
-function spotifyThis(userQuery) {
+function spotifyThis(songName) {
     //Created another spotify variable.  This one holds secret key
     // let spotify = new Spotify(keys.spotify);
-    console.log(Spotify + spotify)
+    console.log("This is my spotify data:  " + Spotify + spotify)
 
     //If no song is provided, program defaults to "The Sign" by Ace of Base.
-    if (!userQuery) {
-        userQuery = "The Sign";
+    if (!songName) {
+        songName = "The Sign";
     }
     //Spotify search format
-    spotify.search({ type: "track", query: userQuery }, function (err, data) {
+    spotify.search({ type: "track", query: songName }, function (err, data) {
         if (err) {
             return console.log("This error occured" + err)
         }
@@ -92,40 +100,85 @@ function spotifyThis(userQuery) {
         let spotArray = data.tracks.items;
 
         for (i = 0; i < spotArray.length; i++) {
-            console.log(`\nBoom!  Check this out!\n\nArtist: ${data.tracks.items[i].album.artists[0].name}
-                \nSong: ${ data.tracks.items[i].name} \nSpotify Link: ${data.tracks.items[i].external_urls.spotify}
-                \nAlbum: ${ data.tracks.items[i].album.name}\n`)
+            console.log("Boom! Check this out!\n\nArtist: " + data.tracks.items[i].album.artists[0].name);
+            console.log("Song: " + data.tracks.items[i].name);
+            console.log("Spotify Link: " + data.tracks.items[i].external_urls.spotify);
+            console.log("Album: " + data.tracks.items[i].album.name);
         };
     });
     // logResults(data);
 }
 
 function movieThis(movie) {
-    let movie = userQuery;
     if (!movie) {
         movie = "Mr. Nobody";
     }
-    let movieQueryUrl = "http://www.omdbapi.com/?t=" + movie + "&y=&plot=short&apikey=trilogy";
+    let pa = process.argv;
+    movie = "";
+    // Loop through all the words in the node argument
+    // And a for-loop to handle the inclusion of "+"s
+    // Iterator starts at 3 to account for the "movie-this" command, which is at [2]
+
+    for (let i = 3; i < pa.length; i++) {
+
+        if (i > 3 && i < pa.length) {
+            movie = movie + "+" + pa[i];
+        } else {
+            movie += pa[i];
+        }
+    }
+
+    let movieQueryUrl = "http://www.omdbapi.com/?t=" + movie + "&y=&plot=short&apikey=f622e3bc";
     axios.get(movieQueryUrl).then(
         function (response) {
-            console.log("Brace yourself for these dope search results!!!");
+
+            // console.log("This is the response for movie query URL " + movieQueryUrl);
+            console.log("  Brace yourself for these dope movie results!!!");
+            console.log("=================================================");
 
             //Formatted movie data that will print to console
-            console.log(`\nTitle: ${response.data.Title} \nYear Released: ${response.data.Year}
-                        \nIMDB Rating: ${response.data.imdbRating} \nRotten Tomatoes Rating: ${response.data.Ratings[1].value}            
-                        \nCountry Where Produced: ${response.data.Country} \nLanguage: ${response.data.Language}
-                        \nPlot: ${response.data.Plot} \nActors: ${response.data.Actors}`);
 
-            let logMoviesInfo = "-------MOVIES LOG ENTRY--------" + "\nTitle: " +
-                movie + "\nYear Released: " + response.data.Year + "\nActors: " + response.data.Actors;
+            console.log("Title: " + response.data.Title);
+            console.log("Year Released: " + response.data.Year);
+            console.log("IMDB Rating: " + response.data.imdbRating);
+            console.log("Year Released: " + response.data.Year);
+            console.log("Rotten Tomatoes Rating: " + response.data.Ratings[1].value);
+            console.log("Country Where Produced: " + response.data.Country)
+            console.log("Language: " + response.data.Language);
+            console.log("Plot: " + response.data.Plot);
+            console.log("Actors: " + response.data.Actors);
 
-            //Appending movies info to log.txt file
-            fs.appendFile("log.txt"), logMoviesInfo, function (err) {
-                if (err) throw err;
-            }
-        });
+            // let logMoviesInfo = "-------MOVIES LOG ENTRY--------" + "\nTitle: " +
+            //     movie + "\nYear Released: " + response.data.Year + "\nActors: " + response.data.Actors;
 
-    // logResults(response);
+            // //Appending movies info to log.txt file
+            // fs.appendFile("log.txt"), logMoviesInfo, function (err) {
+            //     if (err) throw err;
+            // }
+
+        })
+
+    // .catch(function (error) {
+    //     if (error.response) {
+    //         // The request was made and the server responded with a status code
+    //         // that falls out of the range of 2xx
+    //         console.log("---------------Data---------------");
+    //         console.log(error.response.data);
+    //         console.log("---------------Status---------------");
+    //         console.log(error.response.status);
+    //         console.log("---------------Status---------------");
+    //         console.log(error.response.headers);
+    //     } else if (error.request) {
+    //         // The request was made but no response was received
+    //         // `error.request` is an object that comes back with details pertaining to the error that occurred.
+    //         console.log(error.request);
+    //     } else {
+    //         // Something happened in setting up the request that triggered an Error
+    //         console.log("Error", error.message);
+    //     }
+    //     console.log(error.config);
+    // });
+    // logResults();
 };
 
 
@@ -144,7 +197,7 @@ function doWhatiSay() {
     // logResults(data);
 };
 
-// function logResults(data) {
+// function logResults() {
 //     fs.appendFile("log.txt", data, function (err) {
 //         if (err) throw err;
 //     }
